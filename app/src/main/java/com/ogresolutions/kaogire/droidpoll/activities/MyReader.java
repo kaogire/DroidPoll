@@ -12,6 +12,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
@@ -44,12 +45,11 @@ public class MyReader extends AppCompatActivity {
     String address = null;
     DateFormat dft = DateFormat.getDateTimeInstance();
     EditText edtFrom;
-    Calendar dAndT1= Calendar.getInstance();
-    Calendar dAndT2= Calendar.getInstance();
-    DatePickerDialog.OnDateSetListener d1 = new DatePickerDialog.OnDateSetListener(){
+    Calendar dAndT1 = Calendar.getInstance();
+    Calendar dAndT2 = Calendar.getInstance();
+    DatePickerDialog.OnDateSetListener d1 = new DatePickerDialog.OnDateSetListener() {
         public void onDateSet(DatePicker view, int year, int monthOfYear,
-                              int dayOfMonth)
-        {
+                              int dayOfMonth) {
             dAndT1.set(Calendar.YEAR, year);
             dAndT1.set(Calendar.MONTH, monthOfYear);
             dAndT1.set(Calendar.DAY_OF_MONTH, dayOfMonth);
@@ -67,7 +67,7 @@ public class MyReader extends AppCompatActivity {
         }
     };
 
-    public void updateLabel(EditText label, Calendar calendar){
+    public void updateLabel(EditText label, Calendar calendar) {
         label.setText(dft.format(calendar.getTime()));
     }
 
@@ -78,24 +78,8 @@ public class MyReader extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-                fetchInbox();
-//                 ReadSMS myReader = new ReadSMS();
-//                myReader.theReader();
-                Log.i("joe", smsNeutral.toString());
-                Log.i("joe", smsNegative.toString());
-                Log.i("joe", smsPositive.toString());
-            }
-        });
-        edtFrom = (EditText)findViewById(R.id.time1);
+        edtFrom = (EditText) findViewById(R.id.time1);
         edtFrom.setInputType(InputType.TYPE_NULL);
-//        edtTo = (EditText)findViewById(R.id.date1);
-//        edtTo.setInputType(InputType.TYPE_NULL);
         edtFrom.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -106,12 +90,26 @@ public class MyReader extends AppCompatActivity {
                 updateLabel(edtFrom, dAndT1);
             }
         });
-        Button btnResults = (Button)findViewById(R.id.btnResults);
+        Button btnResults = (Button) findViewById(R.id.btnResults);
         btnResults.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MyReader.this, MyResults.class);
                 startActivity(intent);
+            }
+        });
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                if (!TextUtils.isEmpty(edtFrom.getText())) {
+                    fetchInbox();
+                } else {
+                    edtFrom.setError("Please pick time");
+                    Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG).show();
+                }
+
             }
         });
     }
@@ -131,11 +129,7 @@ public class MyReader extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
+        return true;
     }
 
     @Override
@@ -153,18 +147,17 @@ public class MyReader extends AppCompatActivity {
         super.onConfigurationChanged(newConfig);
     }
 
-    public void fetchInbox()
-    {
+    public void fetchInbox() {
         ArrayList smsPosi = new ArrayList();
         ArrayList smsNega = new ArrayList();
         ArrayList smsNeut = new ArrayList();
         int counter1 = 0, counter2 = 0, counter3 = 0, total = 0;
 
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-        String myDate = dAndT1.get(Calendar.YEAR)+"-"+(dAndT1.get(Calendar.MONTH)+1)+"-"+
-                dAndT1.get(Calendar.DAY_OF_MONTH)+"T"+dAndT1.get(Calendar.HOUR_OF_DAY)+":"+
-                dAndT1.get(Calendar.MINUTE)+":"+dAndT1.get(Calendar.SECOND);
-        Log.i("joe",myDate);
+        String myDate = dAndT1.get(Calendar.YEAR) + "-" + (dAndT1.get(Calendar.MONTH) + 1) + "-" +
+                dAndT1.get(Calendar.DAY_OF_MONTH) + "T" + dAndT1.get(Calendar.HOUR_OF_DAY) + ":" +
+                dAndT1.get(Calendar.MINUTE) + ":" + dAndT1.get(Calendar.SECOND);
+        Log.i("joe", myDate);
 
         Date fromDate = null;
         try {
@@ -172,72 +165,70 @@ public class MyReader extends AppCompatActivity {
         } catch (ParseException e) {
             e.printStackTrace();
         }
-        String filter = "date>="+fromDate.getTime();
+        String filter = "date>=" + fromDate.getTime();
 
         Uri uriSMS = Uri.parse("content://sms/inbox");
         Cursor cursor = getContentResolver().query(uriSMS, null, filter, null, null);
 
         cursor.moveToFirst();
 
-        while(cursor.moveToNext())
-        {
+        while (cursor.moveToNext()) {
             ChatMessage newSMS = new ChatMessage();
             address = cursor.getString(cursor.getColumnIndex("address"));
             String body = cursor.getString(cursor.getColumnIndex("body"));
             String person = cursor.getString(cursor.getColumnIndex("person"));
             String x = cursor.getString(cursor.getColumnIndex("date"));
             Date date = new Date(Long.parseLong(x));
-            if (address!=null)
-            {
+            if (address != null) {
                 body.toLowerCase();
                 Log.i("joe", body);
                 Log.i("joe", "lower");
-                if(body.contains("Poll_yes")||body.contains("poll_yes"))
-                {
+                if (body.contains("Poll_yes") || body.contains("poll_yes")) {
                     newSMS.smsTime = date.toString();
                     newSMS.smsAddress = address;
                     newSMS.smsBody = body;
                     smsPositive.add(newSMS);
-                    counter1++;
-                    Log.i("joe", "positive added");
                 }
-                if(body.contains("Poll_neither")||body.contains("poll_neither"))
-                {
+                if (body.contains("Poll_neither") || body.contains("poll_neither")) {
                     newSMS.smsTime = date.toString();
                     newSMS.smsAddress = address;
                     newSMS.smsBody = body;
                     smsNeutral.add(newSMS);
-                    counter2++;
-                    Log.i("joe", "neutral");
                 }
-                if(body.contains("Poll_no")||body.contains("poll_no"))
-                {
+                if (body.contains("Poll_no") || body.contains("poll_no")) {
                     newSMS.smsTime = date.toString();
                     newSMS.smsAddress = address;
                     newSMS.smsBody = body;
                     smsNegative.add(newSMS);
-                    counter3++;
-                    Log.i("joe", "negative");
                 }
-                total++;
             }
         }
-        Float cent1 = ((float)counter1/(float)total)*100;
-        Float cent3 = ((float)counter3/(float)total)*100;
-        Float cent2 = ((float)counter2/(float)total)*100;
-        String[] newt = cursor.getColumnNames();
-        String all = " ";
-        for (String b : newt)
-        {
-            all = all+".  ."+b;
+        counter1 = smsPositive.size();
+        counter2 = smsNegative.size();
+        counter3 = smsNeutral.size();
+        total = counter1 + counter2 + counter3;
+        TextView dispPositive = (TextView) findViewById(R.id.tvPositive);
+        TextView dispNegative = (TextView) findViewById(R.id.tvNegative);
+        TextView dispNeutral = (TextView) findViewById(R.id.tvNeutral);
+        if(counter1==0|| counter2==0 ||counter3 == 0){
+            if(counter1 == 0){
+                dispPositive.setText("Positive: 0%");
+            }
+            if(counter2 == 0){
+                dispNegative.setText("Negative: 0%");
+            }
+            if(counter3 == 0){
+                dispNeutral.setText("Neutral: 0%");
+            }
+        }else{
+            Float cent1 = ((float) counter1 / (float) total) * 100;
+            Float cent3 = ((float) counter3 / (float) total) * 100;
+            Float cent2 = ((float) counter2 / (float) total) * 100;
+
+            dispNegative.setText("Negative: "+cent2+"%");
+            dispPositive.setText("Positive: "+cent1+"%");
+            dispNeutral.setText("Neutral: "+cent3+"%");
         }
-        TextView dispPositive = (TextView)findViewById(R.id.tvPositive);
-        TextView dispNegative = (TextView)findViewById(R.id.tvNegative);
-        TextView dispNeutral = (TextView)findViewById(R.id.tvNeutral);
-        dispNegative.setText("Negative: "+cent3);
-        dispPositive.setText("Positive: "+cent1);
-        dispNeutral.setText("Neutral: "+cent2);
-//        disp.setText("The column names are: " +all );
         cursor.close();
     }
 }
